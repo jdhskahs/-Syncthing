@@ -4,10 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-//go:generate go run ../../proto/scripts/protofmt.go database.proto
-//go:generate protoc -I ../../ -I . --gogofast_out=. database.proto
+//go:generate go run ../../../proto/scripts/protofmt.go database.proto
+//go:generate protoc -I ../../../ -I . --gogofast_out=. database.proto
 
-package main
+package discosrv
 
 import (
 	"context"

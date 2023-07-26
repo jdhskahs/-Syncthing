@@ -36,7 +36,9 @@ import (
 	"github.com/syncthing/syncthing/cmd/syncthing/cli"
 	"github.com/syncthing/syncthing/cmd/syncthing/cmdutil"
 	"github.com/syncthing/syncthing/cmd/syncthing/decrypt"
+	"github.com/syncthing/syncthing/cmd/syncthing/discosrv"
 	"github.com/syncthing/syncthing/cmd/syncthing/generate"
+	"github.com/syncthing/syncthing/cmd/syncthing/relaysrv"
 	"github.com/syncthing/syncthing/lib/build"
 	"github.com/syncthing/syncthing/lib/config"
 	"github.com/syncthing/syncthing/lib/db"
@@ -140,6 +142,8 @@ var entrypoint struct {
 	Generate generate.CLI `cmd:"" help:"Generate key and config, then exit"`
 	Decrypt  decrypt.CLI  `cmd:"" help:"Decrypt or verify an encrypted folder"`
 	Cli      struct{}     `cmd:"" help:"Command line interface for Syncthing"`
+	Discosrv discosrv.CLI `cmd:"" help:"Run the discovery server"`
+	Relaysrv relaysrv.CLI `cmd:"" help:"Run the relay server"`
 }
 
 // serveOptions are the options for the `syncthing serve` command.
