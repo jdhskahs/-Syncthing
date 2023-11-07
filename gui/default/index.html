@@ -585,8 +585,12 @@
                             <span ng-if="folder.versioning.type == 'simple'" tooltip data-original-title="{{'Keep Versions' | translate}}">
                               &ensp;<span class="fa fa-file-archive-o"></span>&nbsp;{{folder.versioning.params.keep}}
                             </span>
-                            <span ng-if="folder.versioning.type == 'staggered'" tooltip data-original-title="{{'Maximum Age' | translate}}">
-                              &ensp;<span class="fa fa-calendar"></span>&nbsp;<span ng-if="folder.versioning.params.maxAge == 0" translate>Forever</span><span ng-if="folder.versioning.params.maxAge > 0">{{folder.versioning.params.maxAge | duration}}</span>
+                            <span ng-if="folder.versioning.type == 'staggered'">
+                              <span tooltip data-original-title="{{'Maximum Age' | translate}}">
+                                &ensp;<span class="fa fa-calendar"></span>&nbsp;<span ng-if="folder.versioning.params.maxAge == 0" translate>Forever</span><span ng-if="folder.versioning.params.maxAge > 0">{{folder.versioning.params.maxAge | duration}}</span>
+                              </span>
+                              <span tooltip data-original-title="{{getEnabledStaggeredIntervals(folder)}}">
+                                &ensp;<span class="fa fa-bars"></span>&nbsp;{{countEnabledStaggeredIntervals(folder)}}</span>
                             </span>
                             <span tooltip data-original-title="{{'Cleanup Interval' | translate}}">
                               &ensp;<span class="fa fa-recycle"></span>&nbsp;<span ng-if="folder.versioning.cleanupIntervalS == 0" translate>Disabled</span><span ng-if="folder.versioning.cleanupIntervalS > 0">{{folder.versioning.cleanupIntervalS | duration}}</span>

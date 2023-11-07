@@ -87,7 +87,16 @@ angular.module('syncthing.core')
             trashcanClean: 0,
             cleanupIntervalS: 3600,
             simpleKeep: 5,
-            staggeredMaxAge: 365,
+            staggeredInterval1: 30, // seconds
+            staggeredInterval2: 1, // hour = 3600 seconds
+            staggeredInterval3: 1, // day = 86400 seconds
+            staggeredInterval4: 7, // days = 604800 seconds
+            staggeredInterval5: 30, // days = 2592000 seconds
+            staggeredPeriod1: 60, // minutes = 3600 seconds
+            staggeredPeriod2: 24, // hours = 86400 seconds
+            staggeredPeriod3: 30, // days = 2592000 seconds
+            staggeredPeriod4: 365, // year = 31536000 seconds
+            staggeredMaxAge: 365, // year = 31536000 seconds
             externalCommand: "",
         };
 
@@ -2243,6 +2252,15 @@ angular.module('syncthing.core')
                 $scope.currentFolder._guiVersioning.trashcanClean = +currentVersioning.params.cleanoutDays;
                 break;
             case "staggered":
+                $scope.currentFolder._guiVersioning.staggeredInterval1 = +currentVersioning.params.staggeredInterval1;
+                $scope.currentFolder._guiVersioning.staggeredInterval2 = Math.floor(+currentVersioning.params.staggeredInterval2 / 3600);
+                $scope.currentFolder._guiVersioning.staggeredInterval3 = Math.floor(+currentVersioning.params.staggeredInterval3 / 86400);
+                $scope.currentFolder._guiVersioning.staggeredInterval4 = Math.floor(+currentVersioning.params.staggeredInterval4 / 86400);
+                $scope.currentFolder._guiVersioning.staggeredInterval5 = Math.floor(+currentVersioning.params.staggeredInterval5 / 86400);
+                $scope.currentFolder._guiVersioning.staggeredPeriod1 = Math.floor(+currentVersioning.params.staggeredPeriod1 / 60);
+                $scope.currentFolder._guiVersioning.staggeredPeriod2 = Math.floor(+currentVersioning.params.staggeredPeriod2 / 3600);
+                $scope.currentFolder._guiVersioning.staggeredPeriod3 = Math.floor(+currentVersioning.params.staggeredPeriod3 / 86400);
+                $scope.currentFolder._guiVersioning.staggeredPeriod4 = Math.floor(+currentVersioning.params.staggeredPeriod4 / 86400);
                 $scope.currentFolder._guiVersioning.staggeredMaxAge = Math.floor(+currentVersioning.params.maxAge / 86400);
                 break;
             case "external":
@@ -2250,6 +2268,111 @@ angular.module('syncthing.core')
                 break;
             }
         };
+
+        $scope.areStaggeredIntervalsValid = function () {
+            if (
+                ($scope.folderEditor.staggeredInterval1.$dirty && $scope.folderEditor.staggeredInterval1.$invalid)
+                || ($scope.folderEditor.staggeredInterval2.$dirty && $scope.folderEditor.staggeredInterval2.$invalid)
+                || ($scope.folderEditor.staggeredInterval3.$dirty && $scope.folderEditor.staggeredInterval3.$invalid)
+                || ($scope.folderEditor.staggeredInterval4.$dirty && $scope.folderEditor.staggeredInterval4.$invalid)
+                || ($scope.folderEditor.staggeredInterval5.$dirty && $scope.folderEditor.staggeredInterval5.$invalid)
+                || ($scope.folderEditor.staggeredPeriod1.$dirty && $scope.folderEditor.staggeredPeriod1.$invalid)
+                || ($scope.folderEditor.staggeredPeriod2.$dirty && $scope.folderEditor.staggeredPeriod2.$invalid)
+                || ($scope.folderEditor.staggeredPeriod3.$dirty && $scope.folderEditor.staggeredPeriod3.$invalid)
+                || ($scope.folderEditor.staggeredPeriod4.$dirty && $scope.folderEditor.staggeredPeriod4.$invalid)
+            ) {
+                return false;
+            } else {
+                return true;
+            }
+        };
+
+        $scope.isStaggeredIntervalDisabled = function (args, folder) {
+            // period5 must be defined separately as the name is staggeredMaxAge
+            // in the GUI and just maxAge in the config.
+            var period5 = '';
+            if (folder) {
+                folder = folder.versioning.params;
+                period5 = folder.maxAge * 86400;
+            } else {
+                folder = $scope.currentFolder._guiVersioning;
+                period5 = folder.staggeredMaxAge * 86400;
+            }
+            var interval1 = folder.staggeredInterval1;
+            var interval2 = folder.staggeredInterval2 * 3600;
+            var interval3 = folder.staggeredInterval3 * 86400;
+            var interval4 = folder.staggeredInterval4 * 86400;
+            var interval5 = folder.staggeredInterval5 * 86400;
+            var period1 = folder.staggeredPeriod1 * 60;
+            var period2 = folder.staggeredPeriod2 * 3600;
+            var period3 = folder.staggeredPeriod3 * 86400;
+            var period4 = folder.staggeredPeriod4 * 86400;
+
+            switch (args) {
+                case '2':
+                    if (period2 <= period1) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                    break;
+                case '3':
+                    if (period3 <= period2 || period2 <= period1) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                    break;
+                case '4':
+                    if (period4 <= period3 || period3 <= period2 || period2 <= period1) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                    break;
+                case '5':
+                    if (period5 <= period4 || period4 <= period3 || period3 <= period2 || period2 <= period1) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                    break;
+            }
+        }
+
+        $scope.getEnabledStaggeredIntervals = function (folder) {
+            var intervals = $translate.instant('Staggered Intervals') + ': ' + folder.versioning.params.staggeredInterval1 + 's/' + folder.versioning.params.staggeredPeriod1 / 60 + 'm';
+            if (!$scope.isStaggeredIntervalDisabled('2', folder)) {
+                intervals += ', ' + folder.versioning.params.staggeredInterval2 / 3600 + 'h/' + folder.versioning.params.staggeredPeriod2 / 3600 + 'h'
+            }
+            if (!$scope.isStaggeredIntervalDisabled('3', folder)) {
+                intervals += ', ' + folder.versioning.params.staggeredInterval3 / 86400 + 'd/' + folder.versioning.params.staggeredPeriod3 / 86400 + 'd'
+            }
+            if (!$scope.isStaggeredIntervalDisabled('4', folder)) {
+                intervals += ', ' + folder.versioning.params.staggeredInterval4 / 86400 + 'd/' + folder.versioning.params.staggeredPeriod4 / 86400 + 'd'
+            }
+            if (!$scope.isStaggeredIntervalDisabled('5', folder)) {
+                intervals += ', ' + folder.versioning.params.staggeredInterval5 / 86400 + 'd/' + folder.versioning.params.maxAge / 86400 + 'd'
+            }
+            return intervals;
+        }
+
+        $scope.countEnabledStaggeredIntervals = function (folder) {
+            var count = 1;
+            if (!$scope.isStaggeredIntervalDisabled('2', folder)) {
+                count += 1;
+            }
+            if (!$scope.isStaggeredIntervalDisabled('3', folder)) {
+                count += 1;
+            }
+            if (!$scope.isStaggeredIntervalDisabled('4', folder)) {
+                count += 1;
+            }
+            if (!$scope.isStaggeredIntervalDisabled('5', folder)) {
+                count += 1;
+            }
+            return count;
+        }
 
         $scope.editFolderExisting = function (folderCfg, initialTab) {
             $scope.currentFolder = angular.copy(folderCfg);
@@ -2428,6 +2551,33 @@ angular.module('syncthing.core')
                 folderCfg.versioning.params.cleanoutDays = '' + folderCfg._guiVersioning.trashcanClean;
                 break;
             case "staggered":
+                // Fix invalid values with interval larger than period. This is
+                // a cosmetic change though as they are harmless due to only the
+                // oldest version in each interval being kept.
+                if (folderCfg._guiVersioning.staggeredInterval1 > folderCfg._guiVersioning.staggeredPeriod1 * 60) {
+                    folderCfg._guiVersioning.staggeredInterval1 = folderCfg._guiVersioning.staggeredPeriod1 * 60;
+                }
+                if (folderCfg._guiVersioning.staggeredInterval2 > folderCfg._guiVersioning.staggeredPeriod2) {
+                    folderCfg._guiVersioning.staggeredInterval2 = folderCfg._guiVersioning.staggeredPeriod2;
+                }
+                if (folderCfg._guiVersioning.staggeredInterval3 > folderCfg._guiVersioning.staggeredPeriod3) {
+                    folderCfg._guiVersioning.staggeredInterval3 = folderCfg._guiVersioning.staggeredPeriod3;
+                }
+                if (folderCfg._guiVersioning.staggeredInterval4 > folderCfg._guiVersioning.staggeredPeriod4) {
+                    folderCfg._guiVersioning.staggeredInterval4 = folderCfg._guiVersioning.staggeredPeriod4;
+                }
+                if (folderCfg._guiVersioning.staggeredInterval5 > folderCfg._guiVersioning.maxAge) {
+                    folderCfg._guiVersioning.staggeredInterval5 = folderCfg._guiVersioning.maxAge;
+                }
+                folderCfg.versioning.params.staggeredInterval1 = '' + (folderCfg._guiVersioning.staggeredInterval1);
+                folderCfg.versioning.params.staggeredInterval2 = '' + (folderCfg._guiVersioning.staggeredInterval2 * 3600);
+                folderCfg.versioning.params.staggeredInterval3 = '' + (folderCfg._guiVersioning.staggeredInterval3 * 86400);
+                folderCfg.versioning.params.staggeredInterval4 = '' + (folderCfg._guiVersioning.staggeredInterval4 * 86400);
+                folderCfg.versioning.params.staggeredInterval5 = '' + (folderCfg._guiVersioning.staggeredInterval5 * 86400);
+                folderCfg.versioning.params.staggeredPeriod1 = '' + (folderCfg._guiVersioning.staggeredPeriod1 * 60);
+                folderCfg.versioning.params.staggeredPeriod2 = '' + (folderCfg._guiVersioning.staggeredPeriod2 * 3600);
+                folderCfg.versioning.params.staggeredPeriod3 = '' + (folderCfg._guiVersioning.staggeredPeriod3 * 86400);
+                folderCfg.versioning.params.staggeredPeriod4 = '' + (folderCfg._guiVersioning.staggeredPeriod4 * 86400);
                 folderCfg.versioning.params.maxAge = '' + (folderCfg._guiVersioning.staggeredMaxAge * 86400);
                 break;
             case "external":
