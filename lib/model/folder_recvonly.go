@@ -206,6 +206,26 @@ func (q *deleteQueue) handle(fi protocol.FileInfo, snap *db.Snapshot) (bool, err
 	return true, err
 }
 
+func (q *deleteQueue) handleIgnored(fi protocol.FileInfo, snap *db.Snapshot) (bool, error) {
+	// TODO: fix this to work with ignored or merge with handle somehow.
+
+	// Things that are not ignored are not processed.
+	ign := q.ignores.Match(fi.Name)
+	if !ign.IsIgnored() {
+		return false, nil
+	}
+
+	// Directories are queued for later processing.
+	if fi.IsDirectory() {
+		q.dirs = append(q.dirs, fi.Name)
+		return false, nil
+	}
+
+	// Kill it.
+	err := q.handler.deleteItemOnDisk(fi, snap, q.scanChan)
+	return true, err
+}
+
 func (q *deleteQueue) flush(snap *db.Snapshot) ([]string, error) {
 	// Process directories from the leaves inward.
 	sort.Sort(sort.Reverse(sort.StringSlice(q.dirs)))
