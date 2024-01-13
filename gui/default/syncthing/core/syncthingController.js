@@ -60,6 +60,7 @@ angular.module('syncthing.core')
         $scope.neededFolder = '';
         $scope.failed = {};
         $scope.localChanged = {};
+        $scope.localIgnored = {};
         $scope.scanProgress = {};
         $scope.themes = [];
         $scope.globalChangeEvents = {};
@@ -907,6 +908,19 @@ angular.module('syncthing.core')
             }).error($scope.emitHTTPError);
         };
 
+        $scope.refreshLocalIgnored = function (page, perpage) {
+            console.log("refreshLocalIgnored")
+            if (!$scope.localIgnoredFolder) {
+                return;
+            }
+            var url = urlbase + '/db/localignored?folder=';
+            url += encodeURIComponent($scope.localIgnoredFolder);
+            url += "&page=" + page + "&perpage=" + perpage;
+            $http.get(url).success(function (data) {
+                $scope.localIgnored = data;
+                console.log("refreshLocalIgnored", data)
+            }).error($scope.emitHTTPError);
+        };
         var refreshDeviceStats = debounce(function () {
             $http.get(urlbase + "/stats/device").success(function (data) {
                 $scope.deviceStats = data;
@@ -3089,11 +3103,38 @@ angular.module('syncthing.core')
         };
 
         $scope.hasReceiveOnlyChanged = function (folderCfg) {
-            if (!folderCfg || ["receiveonly",  "receiveencrypted"].indexOf(folderCfg.type) === -1) {
+            if (!folderCfg || ["receiveonly", "receiveencrypted"].indexOf(folderCfg.type) === -1) {
                 return false;
             }
             var counts = $scope.model[folderCfg.id];
             return counts && counts.receiveOnlyTotalItems > 0;
+        };
+
+        $scope.hasDeleteIgnoredItems = function (folderCfg) {
+            if (!folderCfg || ["receiveonly"].indexOf(folderCfg.type) === -1) {
+                return false;
+            }
+            var counts = $scope.model[folderCfg.id];
+            return counts && counts.localIgnoredTotalItems > 0;
+        };
+
+        $scope.showLocalIgnored = function (folder, folderType) {
+            $scope.localIgnoredFolder = folder;
+            $scope.localIgnoredType = folderType;
+            $scope.localIgnored = $scope.refreshLocalIgnored(1, 10);
+            $('#localIgnored').modal().one('hidden.bs.modal', function () {
+                $scope.localIgnored = {};
+                $scope.localIgnoredFolder = undefined;
+                $scope.localIgnoredType = undefined;
+            });
+        };
+
+        $scope.hasLocalIgnored = function (folderCfg) {
+            if (!folderCfg || ["sendreceive", "sendonly", "receiveonly"].indexOf(folderCfg.type) === -1) {
+                return false;
+            }
+            var counts = $scope.model[folderCfg.id];
+            return counts && counts.localIgnoredFiles > 0;
         };
 
         $scope.revertOverride = function () {
@@ -3122,6 +3163,11 @@ angular.module('syncthing.core')
                     params.heading = $translate.instant("Delete Unexpected Items");
                     params.icon = "fas fa-minus-circle"
                     params.operation = "revert";
+                    break;
+                case "deleteIgn":
+                    params.heading = $translate.instant("Delete Ignored Items");
+                    params.icon = "fas fa-minus-circle"
+                    params.operation = "deleteIgnored";
                     break;
             }
             $scope.revertOverrideParams = params;
